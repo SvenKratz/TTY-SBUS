@@ -197,52 +197,56 @@ bool SBUS::parse()
 {
        
         // reset the parser state if too much time has passed
-        static int elapsedMicros, _sbusTime = 0;
-        if (_sbusTime > SBUS_TIMEOUT_US) {_parserState = 0;}
+        // static int elapsedMicros, _sbusTime = 0;
+        // if (_sbusTime > SBUS_TIMEOUT_US) {_parserState = 0;}
         // see if serial data is available
         int bytes = bytesAvalaible();
-        
-        int count = 0;
-
-        char packet[23];
-        int pack_count = 0;
 
         while (bytes > 0) {
             // std::cout << "PARSE bytes " << bytes << std::endl;
-            _sbusTime = 0;
             char byte[1];
             ::read(_fd, byte, 1 );
             char _curByte = byte[0];
-            if (_curByte == _sbusHeader && count == 0){
-                std::cout << std::endl <<  "<- HDR -> " << std::hex << (int) _curByte << " ";
-                count += 1;
-                pack_count = 0;
-            }
-            else if (count >= 20 && count < 23 && _curByte == _sbusFooter)
+            // find the header
+            if (_parserState == 0)
             {
-                std::cout << std::endl << "<- FTR ("<<std::dec << count << ") ->" <<std::endl;
-                count = 0;
-                for (int i = 0; i < 24; i++)
+                if ((_curByte == _sbusHeader) /*&& ((/prevByte == _sbusFooter) || ((_prevByte & _sbus2Mask) == _sbus2Footer))*/)
                 {
-                    _payload[i] = packet[i];
+                    _parserState++;
                 }
-                pack_count = 0;
-                bzero(packet, sizeof(packet));
-                return true;
-            }
-            else if (count > 0 && count < 23)
-            {
-                //  std::cout << std::hex << (int) _curByte << ",";
-                 count++;
-                 packet[pack_count++] = _curByte;
+                else
+                {
+                    _parserState = 0;
+                }
             }
             else
             {
-                return false;
+                // strip off the data
+                if ((_parserState - 1) < _payloadSize)
+                {
+                    _payload[_parserState - 1] = _curByte;
+                    _parserState++;
+                }
+                // check the end byte
+                if ((_parserState - 1) == _payloadSize)
+                {
+                    if ((_curByte == _sbusFooter) || ((_curByte & _sbus2Mask) == _sbus2Footer))
+                    {
+                        _parserState = 0;
+                        return true;
+                    }
+                    else
+                    {
+                        _parserState = 0;
+                        // std::cout << "false 2" << std::endl;
+                        return false;
+                    }
+                }
             }
-            _prevByte = _curByte;          
+            _prevByte = _curByte;    
         }
         // return false if a partial packet
+        // std::cout << "false 2" << std::endl;
         return false;
 }
 

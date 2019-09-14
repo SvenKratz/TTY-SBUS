@@ -26,6 +26,7 @@ int main () {
                 {
                     std::cout << std::dec << k << " : " << channels[k] << " | ";
                 }
+                std::cout << std::endl;
             }
 
             ++i;
