@@ -19,7 +19,15 @@ int main () {
             bool r = x8r.read(&channels[i], &failSafe, &lostFrame);
             
             // std::cout << i << " r  " << r << " " << channels[i] << " L " << lostFrame << " , ";
-            
+            if (r)
+            {
+                std::cout << "PKT ==> ";
+                for (int k = 0; k < 16; k++)
+                {
+                    std::cout << std::dec << k << " : " << channels[k] << " | ";
+                }
+            }
+
             ++i;
         }
         // std::cout << std::endl << "====" << std::endl;

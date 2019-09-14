@@ -147,7 +147,7 @@ bool SBUS::read(uint16_t* channels, uint8_t* failsafe, uint16_t* lostFrame)
 {
     // parse the SBUS packet
     if (parse()) {
-        std::cout << "Got legit packet, decoding" << std::endl;
+        // std::cout << "Got legit packet, decoding" << std::endl;
         if (channels) {
             // 16 channels of 11 bit data
             channels[0]  = (uint16_t) ((_payload[0]    |_payload[1] <<8)                     & 0x07FF);
@@ -195,33 +195,34 @@ bool SBUS::read(uint16_t* channels, uint8_t* failsafe, uint16_t* lostFrame)
 /* parse the SBUS data */
 bool SBUS::parse()
 {
-        std::cout << "PARSE" << std::endl;
+       
         // reset the parser state if too much time has passed
         static int elapsedMicros, _sbusTime = 0;
         if (_sbusTime > SBUS_TIMEOUT_US) {_parserState = 0;}
         // see if serial data is available
         int bytes = bytesAvalaible();
-        std::cout << "bytes " << bytes << std::endl;
+        
         int count = 0;
 
         char packet[23];
         int pack_count = 0;
 
         while (bytes > 0) {
+            // std::cout << "PARSE bytes " << bytes << std::endl;
             _sbusTime = 0;
             char byte[1];
             ::read(_fd, byte, 1 );
             char _curByte = byte[0];
             if (_curByte == _sbusHeader && count == 0){
-                std::cout << std::endl <<  "<- HDR -> " << std::hex << (int) _curByte << std::endl;
+                std::cout << std::endl <<  "<- HDR -> " << std::hex << (int) _curByte << " ";
                 count += 1;
                 pack_count = 0;
             }
-            else if (count == 25 && _curByte == _sbusFooter)
+            else if (count >= 20 && count < 23 && _curByte == _sbusFooter)
             {
-                std::cout << std::endl << "<- FTR ->";
+                std::cout << std::endl << "<- FTR ("<<std::dec << count << ") ->" <<std::endl;
                 count = 0;
-                for (int i = 0; i < 22; i++)
+                for (int i = 0; i < 24; i++)
                 {
                     _payload[i] = packet[i];
                 }
@@ -229,9 +230,9 @@ bool SBUS::parse()
                 bzero(packet, sizeof(packet));
                 return true;
             }
-            else if (count > 0)
+            else if (count > 0 && count < 23)
             {
-                 std::cout << std::hex << (int) _curByte << ",";
+                //  std::cout << std::hex << (int) _curByte << ",";
                  count++;
                  packet[pack_count++] = _curByte;
             }
