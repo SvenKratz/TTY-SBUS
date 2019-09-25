@@ -147,43 +147,43 @@ bool SBUS::read(uint16_t* channels, uint8_t* failsafe, uint16_t* lostFrame)
 {
     // parse the SBUS packet
     if (parse()) {
-        // std::cout << "Got legit packet, decoding" << std::endl;
-        if (channels) {
-            // 16 channels of 11 bit data
-            channels[0]  = (uint16_t) ((_payload[0]    |_payload[1] <<8)                     & 0x07FF);
-            channels[1]  = (uint16_t) ((_payload[1]>>3 |_payload[2] <<5)                     & 0x07FF);
-            channels[2]  = (uint16_t) ((_payload[2]>>6 |_payload[3] <<2 |_payload[4]<<10)    & 0x07FF);
-            channels[3]  = (uint16_t) ((_payload[4]>>1 |_payload[5] <<7)                     & 0x07FF);
-            channels[4]  = (uint16_t) ((_payload[5]>>4 |_payload[6] <<4)                     & 0x07FF);
-            channels[5]  = (uint16_t) ((_payload[6]>>7 |_payload[7] <<1 |_payload[8]<<9)     & 0x07FF);
-            channels[6]  = (uint16_t) ((_payload[8]>>2 |_payload[9] <<6)                     & 0x07FF);
-            channels[7]  = (uint16_t) ((_payload[9]>>5 |_payload[10]<<3)                     & 0x07FF);
-            channels[8]  = (uint16_t) ((_payload[11]   |_payload[12]<<8)                     & 0x07FF);
-            channels[9]  = (uint16_t) ((_payload[12]>>3|_payload[13]<<5)                     & 0x07FF);
-            channels[10] = (uint16_t) ((_payload[13]>>6|_payload[14]<<2 |_payload[15]<<10)   & 0x07FF);
-            channels[11] = (uint16_t) ((_payload[15]>>1|_payload[16]<<7)                     & 0x07FF);
-            channels[12] = (uint16_t) ((_payload[16]>>4|_payload[17]<<4)                     & 0x07FF);
-            channels[13] = (uint16_t) ((_payload[17]>>7|_payload[18]<<1 |_payload[19]<<9)    & 0x07FF);
-            channels[14] = (uint16_t) ((_payload[19]>>2|_payload[20]<<6)                     & 0x07FF);
-            channels[15] = (uint16_t) ((_payload[20]>>5|_payload[21]<<3)                     & 0x07FF);
-        }
-        if (lostFrame) {
-        // count lost frames
-        if (_payload[22] & _sbusLostFrame) {
-        *lostFrame = true;
-        } else {
-                *lostFrame = false;
-            }
-        }
-        if (failsafe) {
-        // failsafe state
-        if (_payload[22] & _sbusFailSafe) {
-            *failsafe = true;
-        }
-        else{
-            *failsafe = false;
-        }
-        }
+        std::cout << "Got legit packet, decoding" << std::endl;
+        // if (channels) {
+        //     // 16 channels of 11 bit data
+        //     channels[0]  = (uint16_t) ((_payload[0]    |_payload[1] <<8)                     & 0x07FF);
+        //     channels[1]  = (uint16_t) ((_payload[1]>>3 |_payload[2] <<5)                     & 0x07FF);
+        //     channels[2]  = (uint16_t) ((_payload[2]>>6 |_payload[3] <<2 |_payload[4]<<10)    & 0x07FF);
+        //     channels[3]  = (uint16_t) ((_payload[4]>>1 |_payload[5] <<7)                     & 0x07FF);
+        //     channels[4]  = (uint16_t) ((_payload[5]>>4 |_payload[6] <<4)                     & 0x07FF);
+        //     channels[5]  = (uint16_t) ((_payload[6]>>7 |_payload[7] <<1 |_payload[8]<<9)     & 0x07FF);
+        //     channels[6]  = (uint16_t) ((_payload[8]>>2 |_payload[9] <<6)                     & 0x07FF);
+        //     channels[7]  = (uint16_t) ((_payload[9]>>5 |_payload[10]<<3)                     & 0x07FF);
+        //     channels[8]  = (uint16_t) ((_payload[11]   |_payload[12]<<8)                     & 0x07FF);
+        //     channels[9]  = (uint16_t) ((_payload[12]>>3|_payload[13]<<5)                     & 0x07FF);
+        //     channels[10] = (uint16_t) ((_payload[13]>>6|_payload[14]<<2 |_payload[15]<<10)   & 0x07FF);
+        //     channels[11] = (uint16_t) ((_payload[15]>>1|_payload[16]<<7)                     & 0x07FF);
+        //     channels[12] = (uint16_t) ((_payload[16]>>4|_payload[17]<<4)                     & 0x07FF);
+        //     channels[13] = (uint16_t) ((_payload[17]>>7|_payload[18]<<1 |_payload[19]<<9)    & 0x07FF);
+        //     channels[14] = (uint16_t) ((_payload[19]>>2|_payload[20]<<6)                     & 0x07FF);
+        //     channels[15] = (uint16_t) ((_payload[20]>>5|_payload[21]<<3)                     & 0x07FF);
+        // }
+        // if (lostFrame) {
+        // // count lost frames
+        // if (_payload[22] & _sbusLostFrame) {
+        // *lostFrame = true;
+        // } else {
+        //         *lostFrame = false;
+        //     }
+        // }
+        // if (failsafe) {
+        // // failsafe state
+        // if (_payload[22] & _sbusFailSafe) {
+        //     *failsafe = true;
+        // }
+        // else{
+        //     *failsafe = false;
+        // }
+        // }
         // return true on receiving a full packet
         return true;
     } else {
@@ -200,53 +200,54 @@ bool SBUS::parse()
         // static int elapsedMicros, _sbusTime = 0;
         // if (_sbusTime > SBUS_TIMEOUT_US) {_parserState = 0;}
         // see if serial data is available
+
+        const int kMaxBytes = 24;
+
+        char buffer[kMaxBytes];
+
+
         int bytes = bytesAvalaible();
+        _curByte = 0;
+        _prevByte = 0;
+        char _prevPrevByte = 0;
+        char _curByte = 0;
+        char _prevByte = 0;
+
+        int bufIdx = 0;
+
+        bool parse = false;
 
         while (bytes > 0) {
             // std::cout << "PARSE bytes " << bytes << std::endl;
             char byte[1];
             ::read(_fd, byte, 1 );
-            char _curByte = byte[0];
+            _curByte = byte[0];
+            //std::cout << std::hex <<  (int)  _curByte << ',';
             // find the header
-            if (_parserState == 0)
+            if (_curByte == 0x0f && !parse)
             {
-                if ((_curByte == _sbusHeader) /*&& ((/prevByte == _sbusFooter) || ((_prevByte & _sbus2Mask) == _sbus2Footer))*/)
-                {
-                    _parserState++;
-                }
-                else
-                {
-                    _parserState = 0;
-                }
+                parse = true;
             }
-            else
+            // footer
+            else if (parse && _curByte == 0x00 && _prevByte == 0 )
             {
-                // strip off the data
-                if ((_parserState - 1) < _payloadSize)
-                {
-                    _payload[_parserState - 1] = _curByte;
-                    _parserState++;
-                }
-                // check the end byte
-                if ((_parserState - 1) == _payloadSize)
-                {
-                    if ((_curByte == _sbusFooter) || ((_curByte & _sbus2Mask) == _sbus2Footer))
-                    {
-                        _parserState = 0;
-                        return true;
-                    }
-                    else
-                    {
-                        _parserState = 0;
-                        // std::cout << "false 2" << std::endl;
-                        return false;
-                    }
-                }
+                std::cout << "Legit Packet with " << bufIdx << "bytes" << std::endl;
+                return true;
             }
-            _prevByte = _curByte;    
+            else if (parse && bufIdx < kMaxBytes) {
+                buffer[bufIdx++] = _curByte;
+                std::cout << std::hex << (int) _curByte << ",";
+            }
+            else if (bufIdx >= kMaxBytes)
+            {
+                std::cout << "No end" << std::endl;
+                return false;
+            }
+            _prevByte = _curByte;
+            _prevPrevByte = _prevByte;
         }
         // return false if a partial packet
-        // std::cout << "false 2" << std::endl;
+        // std::cout << "No more bytes" << std::endl;
         return false;
 }
 

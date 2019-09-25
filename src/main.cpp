@@ -21,12 +21,12 @@ int main () {
             // std::cout << i << " r  " << r << " " << channels[i] << " L " << lostFrame << " , ";
             if (r)
             {
-                std::cout << "PKT ==> ";
+                // std::cout << "PKT ==> ";
                 for (int k = 0; k < 16; k++)
                 {
-                    std::cout << std::dec << k << " : " << channels[k] << " | ";
+                    // std::cout << std::dec << k << " : " << channels[k] << " | ";
                 }
-                std::cout << std::endl;
+                // std::cout << std::endl;
             }
 
             ++i;
