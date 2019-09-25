@@ -145,9 +145,47 @@ bool SBUS::readCal(float* calChannels, uint8_t* failsafe, uint16_t* lostFrame)
 /* read the SBUS data */
 bool SBUS::read(uint16_t* channels, uint8_t* failsafe, uint16_t* lostFrame)
 {
+
     // parse the SBUS packet
     if (parse()) {
-        std::cout << "Got legit packet, decoding" << std::endl;
+        // std::cout << "Got legit packet, decoding" << std::endl;
+
+        // For a good parsing solution for Futaba-SBUS, see:
+        // https://os.mbed.com/users/Digixx/code/SBUS-Library_16channel/file/83e415034198/FutabaSBUS/FutabaSBUS.cpp/
+
+        int channel_idx = 0;
+        int payload_idx = 0;
+        int bit_in_sbus = 0;
+        int bit_in_channel = 0;
+
+        if (channels)
+        {
+            // TODO: use actual legit byte count we get from rx.
+            for (int i = 0; i < 176; i++)
+            {
+                if (_payload[payload_idx] & (1 << bit_in_sbus))
+                {
+                    channels[channel_idx] |= (1 << bit_in_channel);
+                }
+                bit_in_sbus++;
+                bit_in_channel++;
+                if (bit_in_sbus == 8)
+                {
+                    bit_in_sbus = 0;
+                    payload_idx++;
+                }
+                if (i % 11 == 0)
+                {
+                    std::cout << channel_idx << ":" << channels[channel_idx] << ",";
+                    channel_idx++;
+                    bit_in_channel = 0;
+
+                }
+            }
+        }
+
+        std::cout << std::endl;
+
         // if (channels) {
         //     // 16 channels of 11 bit data
         //     channels[0]  = (uint16_t) ((_payload[0]    |_payload[1] <<8)                     & 0x07FF);
@@ -201,7 +239,7 @@ bool SBUS::parse()
         // if (_sbusTime > SBUS_TIMEOUT_US) {_parserState = 0;}
         // see if serial data is available
 
-        const int kMaxBytes = 24;
+        const int kMaxBytes = _payloadSize;
 
         char buffer[kMaxBytes];
 
@@ -217,6 +255,8 @@ bool SBUS::parse()
 
         bool parse = false;
 
+        bzero(_payload, sizeof(_payload));
+
         while (bytes > 0) {
             // std::cout << "PARSE bytes " << bytes << std::endl;
             char byte[1];
@@ -227,16 +267,19 @@ bool SBUS::parse()
             if (_curByte == 0x0f && !parse)
             {
                 parse = true;
+                continue;
             }
             // footer
             else if (parse && _curByte == 0x00 && _prevByte == 0 )
             {
-                std::cout << "Legit Packet with " << bufIdx << "bytes" << std::endl;
+                std::cout << "Legit Packet with " << std::dec <<  bufIdx << "bytes" << std::endl;
                 return true;
             }
             else if (parse && bufIdx < kMaxBytes) {
                 buffer[bufIdx++] = _curByte;
-                std::cout << std::hex << (int) _curByte << ",";
+                // std::cout << std::hex << (int) _curByte << ",";
+                // buffer copy 
+                memcpy(_payload, buffer, sizeof(buffer));
             }
             else if (bufIdx >= kMaxBytes)
             {

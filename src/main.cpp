@@ -7,7 +7,6 @@ SBUS::SBUS x8r("/dev/ttyUSB0");
 int main () {
     x8r.begin();
 
-    uint16_t channels[16];
     uint8_t failSafe;
     uint16_t lostFrame;
 
@@ -16,17 +15,19 @@ int main () {
         int i = 0;
         while (i < 16)
         {
+            uint16_t channels[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
             bool r = x8r.read(&channels[i], &failSafe, &lostFrame);
             
             // std::cout << i << " r  " << r << " " << channels[i] << " L " << lostFrame << " , ";
             if (r)
             {
                 // std::cout << "PKT ==> ";
-                for (int k = 0; k < 16; k++)
-                {
-                    // std::cout << std::dec << k << " : " << channels[k] << " | ";
-                }
+                // for (int k = 0; k < 16; k++)
+                // {
+                //     std::cout << std::dec << k << " : " << channels[k] << " | ";
+                // }
                 // std::cout << std::endl;
+
             }
 
             ++i;
