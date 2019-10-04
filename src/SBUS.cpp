@@ -153,6 +153,9 @@ bool SBUS::read(uint16_t* channels, uint8_t* failsafe, uint16_t* lostFrame)
         // For a good parsing solution for Futaba-SBUS, see:
         // https://os.mbed.com/users/Digixx/code/SBUS-Library_16channel/file/83e415034198/FutabaSBUS/FutabaSBUS.cpp/
 
+        uint8_t sbus_data[25] = {
+  0x0f,0x01,0x04,0x20,0x00,0xff,0x07,0x40,0x00,0x02,0x10,0x80,0x2c,0x64,0x21,0x0b,0x59,0x08,0x40,0x00,0x02,0x10,0x80,0x00,0x00};
+
         int channel_idx = 0;
         int payload_idx = 0;
         int bit_in_sbus = 0;
@@ -166,63 +169,35 @@ bool SBUS::read(uint16_t* channels, uint8_t* failsafe, uint16_t* lostFrame)
                 if (_payload[payload_idx] & (1 << bit_in_sbus))
                 {
                     channels[channel_idx] |= (1 << bit_in_channel);
+                    // cout << "1";
                 }
-                bit_in_sbus++;
+                else
+                {
+                    // cout << "0";
+                }
+                
                 bit_in_channel++;
+                bit_in_sbus++;
                 if (bit_in_sbus == 8)
                 {
                     bit_in_sbus = 0;
                     payload_idx++;
+                    // cout << "-";
                 }
-                if (i % 11 == 0)
+  
+                if (bit_in_channel == 11)
                 {
-                    std::cout << channel_idx << ":" << channels[channel_idx] << ",";
-                    channel_idx++;
+                    if (i > 0){
+                        // std::cout << channel_idx << ":" << channels[channel_idx] << "\t";
+                        cout << channel_idx <<" : " << channels[channel_idx] << " ";
+                    }
                     bit_in_channel = 0;
-
-                }
+                    channel_idx++;
+              }
             }
         }
 
         std::cout << std::endl;
-
-        // if (channels) {
-        //     // 16 channels of 11 bit data
-        //     channels[0]  = (uint16_t) ((_payload[0]    |_payload[1] <<8)                     & 0x07FF);
-        //     channels[1]  = (uint16_t) ((_payload[1]>>3 |_payload[2] <<5)                     & 0x07FF);
-        //     channels[2]  = (uint16_t) ((_payload[2]>>6 |_payload[3] <<2 |_payload[4]<<10)    & 0x07FF);
-        //     channels[3]  = (uint16_t) ((_payload[4]>>1 |_payload[5] <<7)                     & 0x07FF);
-        //     channels[4]  = (uint16_t) ((_payload[5]>>4 |_payload[6] <<4)                     & 0x07FF);
-        //     channels[5]  = (uint16_t) ((_payload[6]>>7 |_payload[7] <<1 |_payload[8]<<9)     & 0x07FF);
-        //     channels[6]  = (uint16_t) ((_payload[8]>>2 |_payload[9] <<6)                     & 0x07FF);
-        //     channels[7]  = (uint16_t) ((_payload[9]>>5 |_payload[10]<<3)                     & 0x07FF);
-        //     channels[8]  = (uint16_t) ((_payload[11]   |_payload[12]<<8)                     & 0x07FF);
-        //     channels[9]  = (uint16_t) ((_payload[12]>>3|_payload[13]<<5)                     & 0x07FF);
-        //     channels[10] = (uint16_t) ((_payload[13]>>6|_payload[14]<<2 |_payload[15]<<10)   & 0x07FF);
-        //     channels[11] = (uint16_t) ((_payload[15]>>1|_payload[16]<<7)                     & 0x07FF);
-        //     channels[12] = (uint16_t) ((_payload[16]>>4|_payload[17]<<4)                     & 0x07FF);
-        //     channels[13] = (uint16_t) ((_payload[17]>>7|_payload[18]<<1 |_payload[19]<<9)    & 0x07FF);
-        //     channels[14] = (uint16_t) ((_payload[19]>>2|_payload[20]<<6)                     & 0x07FF);
-        //     channels[15] = (uint16_t) ((_payload[20]>>5|_payload[21]<<3)                     & 0x07FF);
-        // }
-        // if (lostFrame) {
-        // // count lost frames
-        // if (_payload[22] & _sbusLostFrame) {
-        // *lostFrame = true;
-        // } else {
-        //         *lostFrame = false;
-        //     }
-        // }
-        // if (failsafe) {
-        // // failsafe state
-        // if (_payload[22] & _sbusFailSafe) {
-        //     *failsafe = true;
-        // }
-        // else{
-        //     *failsafe = false;
-        // }
-        // }
-        // return true on receiving a full packet
         return true;
     } else {
         // return false if a full packet is not received
@@ -262,7 +237,7 @@ bool SBUS::parse()
             char byte[1];
             ::read(_fd, byte, 1 );
             _curByte = byte[0];
-            //std::cout << std::hex <<  (int)  _curByte << ',';
+            // std::cout << std::hex <<  (int)  _curByte << ',';
             // find the header
             if (_curByte == 0x0f && !parse)
             {
@@ -270,20 +245,19 @@ bool SBUS::parse()
                 continue;
             }
             // footer
-            else if (parse && _curByte == 0x00 && _prevByte == 0 )
+            else if (parse && _curByte == 0 && _prevByte == 0 && bufIdx >= 17)
             {
-                std::cout << "Legit Packet with " << std::dec <<  bufIdx << "bytes" << std::endl;
+                std::cout << std::dec <<  bufIdx << "> ";
+                memcpy(_payload, buffer, sizeof(buffer));
                 return true;
             }
             else if (parse && bufIdx < kMaxBytes) {
                 buffer[bufIdx++] = _curByte;
                 // std::cout << std::hex << (int) _curByte << ",";
-                // buffer copy 
-                memcpy(_payload, buffer, sizeof(buffer));
             }
             else if (bufIdx >= kMaxBytes)
             {
-                std::cout << "No end" << std::endl;
+                // std::cout << "No end" << std::endl;
                 return false;
             }
             _prevByte = _curByte;
