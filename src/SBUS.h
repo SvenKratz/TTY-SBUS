@@ -55,7 +55,7 @@ class SBUS
         const uint8_t _sbus2Mask = 0x0F;
         const uint32_t SBUS_TIMEOUT_US = 7000;
         uint8_t _parserState, _prevByte = _sbusFooter, _curByte;
-        static const uint8_t _payloadSize = 24;
+        static const uint8_t _payloadSize = 30;
         uint8_t _payload[_payloadSize];
         const uint8_t _sbusLostFrame = 0x04;
         const uint8_t _sbusFailSafe = 0x08;

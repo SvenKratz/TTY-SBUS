@@ -239,15 +239,16 @@ bool SBUS::parse()
             _curByte = byte[0];
             // std::cout << std::hex <<  (int)  _curByte << ',';
             // find the header
-            if (_curByte == 0x0f && !parse)
+            if (_curByte == 0x1f && !parse)
             {
+                // std::cout << "HDR" << std::endl;
                 parse = true;
                 continue;
             }
             // footer
             else if (parse && _curByte == 0 && _prevByte == 0 && bufIdx >= 17)
             {
-                std::cout << std::dec <<  bufIdx << "> ";
+                // std::cout << std::dec <<  bufIdx << "> ";
                 memcpy(_payload, buffer, sizeof(buffer));
                 return true;
             }
